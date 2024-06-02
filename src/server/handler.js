@@ -20,14 +20,15 @@ const initFirebase = () => {
 };
 
 export const register = async (request, h) => {
-    const { email, password } = request.payload;
+    const { email, password, name } = request.payload;
     const { auth, firestore } = initFirebase();
 
     try {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const userData = { // Store only non-sensitive user data (replace with desired fields)
             uid: userCredential.user.uid,
-            email: email
+            email: email,
+            name: name
         };
 
         const userRef = await addDoc(collection(firestore, 'users'), userData);
