@@ -1,28 +1,21 @@
-require('dotenv').config();
-const Hapi = require('@hapi/hapi');
-const routes = require('../server/routes');
-const loadModel = require('../services/loadModel');
+import Hapi from '@hapi/hapi';
+import routes from './routes.js';
 
-(async () => {
+const init = async () => {
     const server = Hapi.server({
         port: 3000,
-        host: '0.0.0.0',
-        routes: {
-            cors: {
-                origin: ['*'],
-            },
-            payload: {
-                maxBytes: 1000000, 
-                allow: 'multipart/form-data'
-            }
-        },
+        host: 'localhost'
     });
 
-    const model = await loadModel();
-    server.app.model = model;
-
-    server.route(routes);
+    server.route(routes); 
 
     await server.start();
-    console.log(`Server start at: ${server.info.uri}`);
-})();
+    console.log('Server running on %s', server.info.uri);
+};
+
+process.on('unhandledRejection', (err) => {
+    console.error(err);
+    process.exit(1);
+});
+
+init();
