@@ -1,0 +1,33 @@
+name: Deploy to Cloud Run
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up Google Cloud SDK
+      uses: google-github-actions/setup-gcloud@v1
+      with:
+        project_id: capstone-424513
+        service_account_key: ${{ secrets.GCP_SA_KEY }}
+        export_default_credentials: true
+
+    - name: Build and push Docker image
+      run: |
+        gcloud builds submit --tag gcr.io/capstone-424513/capstone
+
+    - name: Deploy to Cloud Run
+      run: |
+        gcloud run deploy capstone \
+          --image gcr.io/capstone-424513/capstone \
+          --region asia-southeast2 \
+          --platform managed \
+          --allow-unauthenticated
