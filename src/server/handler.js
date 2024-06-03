@@ -1,7 +1,7 @@
 // Import necessary Firebase modules
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInWithPopup, GoogleAuthProvider, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
-import { getFirestore, collection, addDoc } from 'firebase/firestore';
+import { getFirestore,setDoc, doc, getDoc } from 'firebase/firestore';
 
 // Replace with your actual Firebase project configuration
 const firebaseConfig = {
@@ -15,29 +15,41 @@ const initFirebase = () => {
     const auth = getAuth(firebaseApp);
     const firestore = getFirestore(firebaseApp);
     const googleProvider = new GoogleAuthProvider();
-
-    return { auth, firestore, googleProvider };
+    const db = getFirestore(firebaseApp);
+    return { auth, firestore, googleProvider, db };
 };
 
 export const register = async (request, h) => {
     const { email, password, name } = request.payload;
     const { auth, firestore } = initFirebase();
 
+    // Validate the name field
+    if (!name || name.trim().length < 3) {
+        return h.response({ message: 'Invalid name. Please provide a name with at least 3 characters.' }).code(400);
+    }
+
     try {
+        // Create user with email and password
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        const userData = { // Store only non-sensitive user data (replace with desired fields)
-            uid: userCredential.user.uid,
+        const userId = userCredential.user.uid;
+        const userData = {
+            uid: userId,
             email: email,
-            name: name
+            name: name.trim()
         };
 
-        const userRef = await addDoc(collection(firestore, 'users'), userData);
-        userData.id = userRef.id; // Add generated document ID to user data (optional)
+        // Set the document with UID as the document ID
+        const userRef = doc(firestore, 'users', userId);
+        await setDoc(userRef, userData);
 
         return h.response({ message: 'Registration successful', data: userData }).code(201);
     } catch (error) {
-        console.error(error);
-        return h.response({ message: 'Registration failed' }).code(400);
+        if (error.code === 'auth/email-already-in-use') {
+            return h.response({ message: 'Email is already in use. Please use a different email.' }).code(400);
+        } else {
+            console.error(error);
+            return h.response({ message: 'Registration failed', error: error.message }).code(400);
+        }
     }
 };
 
@@ -53,9 +65,6 @@ export const loginGoogle = async (request, h) => {
             displayName: userCredential.user.displayName
         };
 
-        // You can potentially check for existing user in Firestore based on UID and handle accordingly
-        // (e.g., retrieve additional user data or create a new user document if it doesn't exist)
-
         return h.response({ message: 'Login successful', data: userData }).code(200);
     } catch (error) {
         console.error(error);
@@ -65,20 +74,44 @@ export const loginGoogle = async (request, h) => {
 
 export const loginEmail = async (request, h) => {
     const { email, password } = request.payload;
-    const { auth } = initFirebase();
+    const { auth, db } = initFirebase();
 
     if (email && password) {
         try {
+            // Sign in with email and password
             const userCredential = await signInWithEmailAndPassword(auth, email, password);
+            const userId = userCredential.user.uid;
             const userData = {
-                uid: userCredential.user.uid,
+                uid: userId,
                 email: email
             };
 
-            return h.response({ message: 'Login successful', data: userData }).code(200);
+            // Log user ID for debugging
+            console.log(`User ID: ${userId}`);
+
+            // Reference the user document in Firestore using UID
+            const userRef = doc(db, 'users', userId);
+            const docSnap = await getDoc(userRef);
+
+            if (!docSnap.exists()) {
+                console.log('No such document!');
+                return h.response({ message: 'No such document!' }).code(404);
+            } else {
+                const userDoc = docSnap.data();
+                console.log('Document data:', userDoc);
+
+                // Retrieve the 'name' field from the document
+                const name = userDoc.name;
+
+                // Include the 'name' field in the JSON response
+                return h.response({
+                    message: 'Login successful',
+                    data: { ...userData, name }
+                }).code(200);
+            }
         } catch (error) {
             console.error(error);
-            return h.response({ message: 'Login failed' }).code(401);
+            return h.response({ message: 'Login failed', error: error.message }).code(401);
         }
     } else {
         // Handle missing email or password for email/password login
