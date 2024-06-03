@@ -25,7 +25,10 @@ export const register = async (request, h) => {
 
     // Validate the name field
     if (!name || name.trim().length < 3) {
-        return h.response({ message: 'Invalid name. Please provide a name with at least 3 characters.' }).code(400);
+        return h.response({ 
+            error: true, 
+            message: 'Invalid name. Please provide a name with at least 3 characters.' 
+        }).code(400);
     }
 
     try {
@@ -42,13 +45,13 @@ export const register = async (request, h) => {
         const userRef = doc(firestore, 'users', userId);
         await setDoc(userRef, userData);
 
-        return h.response({ message: 'Registration successful', data: userData }).code(201);
+        return h.response({ error: false, message: 'Registration successful', data: userData }).code(201);
     } catch (error) {
         if (error.code === 'auth/email-already-in-use') {
-            return h.response({ message: 'Email is already in use. Please use a different email.' }).code(400);
+            return h.response({ error: true, message: 'Email is already in use. Please use a different email.' }).code(400);
         } else {
             console.error(error);
-            return h.response({ message: 'Registration failed', error: error.message }).code(400);
+            return h.response({ error: true, message: 'Registration failed', error: error.message }).code(400);
         }
     }
 };
@@ -65,12 +68,23 @@ export const loginGoogle = async (request, h) => {
             displayName: userCredential.user.displayName
         };
 
-        return h.response({ message: 'Login successful', data: userData }).code(200);
+        // Generate Firebase ID token
+        const idToken = await auth.currentUser.getIdToken();
+
+        return h.response({
+            error: false,
+            message: 'Login successful',
+            data: {
+                ...userData,
+                token: idToken  // Include the ID token in the response
+            }
+        }).code(200);
     } catch (error) {
         console.error(error);
-        return h.response({ message: 'Login failed' }).code(401);
+        return h.response({ error: true, message: 'Login failed' }).code(401);
     }
 };
+
 
 export const loginEmail = async (request, h) => {
     const { email, password } = request.payload;
@@ -86,8 +100,8 @@ export const loginEmail = async (request, h) => {
                 email: email
             };
 
-            // Log user ID for debugging
-            console.log(`User ID: ${userId}`);
+            // Generate Firebase ID token
+            const idToken = await auth.currentUser.getIdToken();
 
             // Reference the user document in Firestore using UID
             const userRef = doc(db, 'users', userId);
@@ -95,7 +109,7 @@ export const loginEmail = async (request, h) => {
 
             if (!docSnap.exists()) {
                 console.log('No such document!');
-                return h.response({ message: 'No such document!' }).code(404);
+                return h.response({ error: true, message: 'No such document!' }).code(404);
             } else {
                 const userDoc = docSnap.data();
                 console.log('Document data:', userDoc);
@@ -103,18 +117,23 @@ export const loginEmail = async (request, h) => {
                 // Retrieve the 'name' field from the document
                 const name = userDoc.name;
 
-                // Include the 'name' field in the JSON response
+                // Include the 'name' field and token in the JSON response
                 return h.response({
+                    error: false,
                     message: 'Login successful',
-                    data: { ...userData, name }
+                    data: { 
+                        ...userData,
+                        name,
+                        token : idToken
+                    }
                 }).code(200);
             }
         } catch (error) {
             console.error(error);
-            return h.response({ message: 'Login failed', error: error.message }).code(401);
+            return h.response({ error: true, message: 'Login failed', error: error.message }).code(401);
         }
     } else {
         // Handle missing email or password for email/password login
-        return h.response({ message: 'Please provide email and password' }).code(400);
+        return h.response({ error: true, message: 'Please provide email and password' }).code(400);
     }
 };
