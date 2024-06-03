@@ -1,19 +1,8 @@
-FROM node:20 AS builder
-
+FROM node:20
 WORKDIR /app
-
 COPY package*.json ./
 RUN npm install
-
 COPY . .
-
-FROM node:20 AS runner
-
-WORKDIR /app
-
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app .
-
+ENV PORT=3000
 EXPOSE 3000
-
-CMD ["npm", "start"]
+CMD [ "npm", "run", "start" ]
