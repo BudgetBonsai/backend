@@ -2,8 +2,8 @@ import { initializeApp } from 'firebase/app';
 import { getAuth, signInWithPopup, GoogleAuthProvider, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
 import { getFirestore, setDoc, doc, getDoc, query, where, collection, Timestamp, getDocs, addDoc } from 'firebase/firestore';
 import admin from 'firebase-admin';
-import serviceAccount from '../../firebase.json' assert { type: 'json' }; // Adjust the path to your service account JSON file
-
+// import serviceAccount from '../../firebase.json' assert { type: 'json' }; // Adjust the path to your service account JSON file
+const serviceAccount = JSON.parse(process.env.GCP_SA_KEY);
 // Initialize Firebase Admin SDK
 admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
