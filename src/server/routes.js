@@ -1,5 +1,5 @@
 // routes.js
-import { register, loginGoogle, loginEmail } from './handler.js';
+import { register, loginGoogle, loginEmail, addExpense, verifyToken, getExpenses } from './handler.js';
 
 export default [
     {
@@ -16,5 +16,23 @@ export default [
         method: 'POST',
         path: '/login/email',
         handler: loginEmail,
+    },
+    {
+        method: 'POST',
+        path: '/expense',
+        options: {
+            pre: [verifyToken]
+        },
+        handler: addExpense
+        
+    },
+    {
+        method: 'GET',
+        path: '/expense',
+        options: {
+            pre: [verifyToken]
+        },
+        handler: getExpenses
+        
     }
 ];

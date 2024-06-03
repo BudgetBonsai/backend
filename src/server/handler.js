@@ -1,8 +1,14 @@
-// Import necessary Firebase modules
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInWithPopup, GoogleAuthProvider, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
-import { getFirestore,setDoc, doc, getDoc } from 'firebase/firestore';
+import { getFirestore, setDoc, doc, getDoc, query, where, collection, Timestamp, getDocs, addDoc } from 'firebase/firestore';
+import admin from 'firebase-admin';
+import serviceAccount from '../../firebase.json' assert { type: 'json' }; // Adjust the path to your service account JSON file
 
+// Initialize Firebase Admin SDK
+admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount),
+    databaseURL: "https://capstone-424513.firebaseio.com" // Adjust the databaseURL if necessary
+});
 // Replace with your actual Firebase project configuration
 const firebaseConfig = {
     apiKey: "AIzaSyDPFz9k-SxQH2DApVjTdQ-WtB15fmd4rH4",
@@ -17,6 +23,22 @@ const initFirebase = () => {
     const googleProvider = new GoogleAuthProvider();
     const db = getFirestore(firebaseApp);
     return { auth, firestore, googleProvider, db };
+};
+
+export const verifyToken = async (request, h) => {
+    const idToken = request.headers.authorization?.split('Bearer ')[1];
+    if (!idToken) {
+        return h.response({ error: true, message: 'Authorization token not provided' }).code(401);
+    }
+
+    try {
+        const decodedToken = await admin.auth().verifyIdToken(idToken);
+        request.user = decodedToken;
+        return h.continue;
+    } catch (error) {
+        console.error('Token verification error:', error);
+        return h.response({ error: true, message: 'Invalid or expired token' }).code(401);
+    }
 };
 
 export const register = async (request, h) => {
@@ -135,5 +157,83 @@ export const loginEmail = async (request, h) => {
     } else {
         // Handle missing email or password for email/password login
         return h.response({ error: true, message: 'Please provide email and password' }).code(400);
+    }
+};
+
+export const addExpense = async (request, h) => {
+    const { date, name, amount, category } = request.payload;
+    const { firestore } = initFirebase();
+
+    // Validate input fields
+    if (!date || !name || !amount || !category) {
+        return h.response({ 
+            error: true, 
+            message: 'All fields (date, name, amount, category) are required.' 
+        }).code(400);
+    }
+
+    try {
+        // Get the currently signed-in user
+        const user = request.user;
+        if (!user) {
+            return h.response({ error: true, message: 'User is not authenticated' }).code(401);
+        }
+
+        // Create a new expense object
+        const expenseData = {
+            date: Timestamp.fromDate(new Date(date)),  // Store date as Firestore Timestamp
+            name: name.trim(),
+            amount: parseFloat(amount),
+            category: category.trim(),
+            userId: user.uid,
+        };
+
+        // Add the expense to Firestore under the user's expenses collection
+        const expensesRef = collection(firestore, 'users', user.uid, 'expenses');
+        const expenseDoc = await addDoc(expensesRef, expenseData);
+
+        return h.response({
+            error: false,
+            message: 'Expense added successfully',
+            data: { id: expenseDoc.id, ...expenseData }
+        }).code(201);
+    } catch (error) {
+        console.error(error);
+        return h.response({ error: true, message: 'Failed to add expense', error: error.message }).code(500);
+    }
+};
+
+export const getExpenses = async (request, h) => {
+    const { firestore } = initFirebase();
+
+    try {
+        // Get the currently signed-in user
+        const user = request.user;
+        if (!user) {
+            return h.response({ error: true, message: 'User is not authenticated' }).code(401);
+        }
+
+        // Query expenses collection for the user
+        const expensesRef = collection(firestore, 'users', user.uid, 'expenses');
+        const q = query(expensesRef);
+
+        const querySnapshot = await getDocs(q);
+        const expenses = [];
+
+        querySnapshot.forEach((doc) => {
+            expenses.push({
+                id: doc.id,
+                ...doc.data()
+            });
+        });
+
+        return h.response({
+            error: false,
+            message: 'Expenses retrieved successfully',
+            data: expenses
+        }).code(200);
+    } catch (error) {
+        console.error(error);
+        return h.response({ error: true, message: 'Failed to get expenses', error: error.message }).code(500);
     }
 };
