@@ -7,12 +7,12 @@ RUN npm install
 
 COPY . .
 
-FROM node:latest-alpine AS runner
+FROM node:20 AS runner
 
 WORKDIR /app
 
 COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder . .
+COPY --from=builder /app .
 
 EXPOSE 3000
 
