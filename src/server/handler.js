@@ -2,9 +2,8 @@ import { initializeApp } from 'firebase/app';
 import { getAuth, signInWithPopup, GoogleAuthProvider, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
 import { getFirestore, setDoc, doc, getDoc, query, where, collection, Timestamp, getDocs, addDoc } from 'firebase/firestore';
 import admin from 'firebase-admin';
-// import serviceAccount from '../../firebase.json' assert { type: 'json' }; // Adjust the path to your service account JSON file
-const serviceAccount = JSON.parse(process.env.GCP_SA_KEY);
-// Initialize Firebase Admin SDK
+import serviceAccount from '../../firebase.json' assert { type: 'json' }; // Adjust the path to your service account JSON file
+// // Initialize Firebase Admin SDK
 admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
     databaseURL: "https://capstone-424513.firebaseio.com" // Adjust the databaseURL if necessary
@@ -15,6 +14,7 @@ const firebaseConfig = {
     authDomain: "capstone-424513.firebaseapp.com",
     projectId: "capstone-424513",
 };
+
 
 const initFirebase = () => {
     const firebaseApp = initializeApp(firebaseConfig);
@@ -73,7 +73,7 @@ export const register = async (request, h) => {
             return h.response({ error: true, message: 'Email is already in use. Please use a different email.' }).code(400);
         } else {
             console.error(error);
-            return h.response({ error: true, message: 'Registration failed', error: error.message }).code(400);
+            return h.response({ error: true, message: 'Registration failed, ' + error.message}).code(400);
         }
     }
 };
