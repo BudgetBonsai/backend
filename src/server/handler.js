@@ -152,7 +152,7 @@ export const loginEmail = async (request, h) => {
             }
         } catch (error) {
             console.error(error);
-            return h.response({ error: true, message: 'Login failed', error: error.message }).code(401);
+            return h.response({ error: true, message: 'Login failed ' + error.message }).code(401);
         }
     } else {
         // Handle missing email or password for email/password login
@@ -160,15 +160,15 @@ export const loginEmail = async (request, h) => {
     }
 };
 
-export const addExpense = async (request, h) => {
-    const { date, name, amount, category } = request.payload;
+export const addTransaction = async (request, h) => {
+    const { date, name, amount, category, type } = request.payload;
     const { firestore } = initFirebase();
 
     // Validate input fields
     if (!date || !name || !amount || !category) {
         return h.response({ 
             error: true, 
-            message: 'All fields (date, name, amount, category) are required.' 
+            message: 'All fields (date, name, amount, category, type) are required.' 
         }).code(400);
     }
 
@@ -180,30 +180,31 @@ export const addExpense = async (request, h) => {
         }
 
         // Create a new expense object
-        const expenseData = {
+        const transactionData = {
             date: Timestamp.fromDate(new Date(date)),  // Store date as Firestore Timestamp
             name: name.trim(),
             amount: parseFloat(amount),
             category: category.trim(),
+            type: type.trim(),
             userId: user.uid,
         };
 
         // Add the expense to Firestore under the user's expenses collection
-        const expensesRef = collection(firestore, 'users', user.uid, 'expenses');
-        const expenseDoc = await addDoc(expensesRef, expenseData);
+        const transactionRef = collection(firestore, 'users', user.uid, 'transaction');
+        const transactionDoc = await addDoc(transactionRef, transactionData);
 
         return h.response({
             error: false,
-            message: 'Expense added successfully',
-            data: { id: expenseDoc.id, ...expenseData }
+            message: 'Transaction added successfully',
+            data: { id: transactionDoc.id, ...transactionData }
         }).code(201);
     } catch (error) {
         console.error(error);
-        return h.response({ error: true, message: 'Failed to add expense', error: error.message }).code(500);
+        return h.response({ error: true, message: 'Failed to add transaction '+ error.message }).code(500);
     }
 };
 
-export const getExpenses = async (request, h) => {
+export const getTransaction = async (request, h) => {
     const { firestore } = initFirebase();
 
     try {
@@ -214,14 +215,14 @@ export const getExpenses = async (request, h) => {
         }
 
         // Query expenses collection for the user
-        const expensesRef = collection(firestore, 'users', user.uid, 'expenses');
-        const q = query(expensesRef);
+        const transactionRef = collection(firestore, 'users', user.uid, 'transaction');
+        const q = query(transactionRef);
 
         const querySnapshot = await getDocs(q);
-        const expenses = [];
+        const transaction = [];
 
         querySnapshot.forEach((doc) => {
-            expenses.push({
+            transaction.push({
                 id: doc.id,
                 ...doc.data()
             });
@@ -229,11 +230,11 @@ export const getExpenses = async (request, h) => {
 
         return h.response({
             error: false,
-            message: 'Expenses retrieved successfully',
-            data: expenses
+            message: 'transaction retrieved successfully',
+            data: transaction
         }).code(200);
     } catch (error) {
         console.error(error);
-        return h.response({ error: true, message: 'Failed to get expenses', error: error.message }).code(500);
+        return h.response({ error: true, message: 'Failed to get trasaction' + error.message }).code(500);
     }
 };
