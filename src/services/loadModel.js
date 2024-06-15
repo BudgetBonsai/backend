@@ -1,4 +1,7 @@
-async function loadModel() {
+import * as tf from '@tensorflow/tfjs-node';
 
+async function loadModel() {
+    
 }
-module.exports = loadModel;
+
+export default loadModel;
