@@ -468,4 +468,47 @@ export const deleteWishlistItem = async (request, h) => {
     }
 };
 
+export const addAmountToWishlistItem = async (request, h) => {
+    const { wishlistItemId } = request.params;  // Extract wishlistItemId from params
+    const { amount, date, type } = request.payload;
+
+    if (!amount || !date || !type) {
+        return h.response({
+            error: true,
+            message: 'amount, date, and type are required.'
+        }).code(400);
+    }
+
+    try {
+        const user = request.user;
+        if (!user) {
+            return h.response({ error: true, message: 'User is not authenticated' }).code(401);
+        }
+
+        const amountToAdd = parseFloat(amount);
+        const transactionDate = Timestamp.fromDate(new Date(date));
+
+        // Prepare the transaction data
+        const transactionData = {
+            date: transactionDate,
+            amount: amountToAdd,
+            type: type.trim(),
+            userId: user.uid,
+        };
+
+        const wishlistItemRef = doc(firestore, 'users', user.uid, 'wishlist', wishlistItemId);
+        const transactionsRef = collection(wishlistItemRef, 'transactions');
+        const transactionDoc = await addDoc(transactionsRef, transactionData);
+
+        return h.response({
+            error: false,
+            message: 'Amount added to wishlist item successfully',
+            data: { id: transactionDoc.id, ...transactionData }
+        }).code(201);
+    } catch (error) {
+        console.error(error);
+        return h.response({ error: true, message: 'Failed to add amount to wishlist item ' + error.message }).code(500);
+    }
+};
+
 export default initFirebase;

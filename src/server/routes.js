@@ -8,7 +8,8 @@ import {
     addWishlistItem, 
     getWishlistItems,
     updateWishlistItem, 
-    deleteWishlistItem 
+    deleteWishlistItem,
+    addAmountToWishlistItem
 } from './handler.js';
 
 export default [
@@ -84,5 +85,13 @@ export default [
             pre: [verifyToken],
         },
         handler: deleteWishlistItem,
+    },
+    {
+        method: 'POST',
+        path: '/wishlist/{wishlistItemId}/add-amount',
+        options: {
+            pre: [verifyToken],
+        },
+        handler: addAmountToWishlistItem,
     },
 ];
