@@ -521,5 +521,4 @@ export const addAmountToWishlistItem = async (request, h) => {
     }
 };
 
-
 export default initFirebase;
