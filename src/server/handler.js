@@ -468,9 +468,6 @@ export const deleteWishlistItem = async (request, h) => {
     }
 };
 
-import { Timestamp, doc, getDoc, collection, addDoc } from 'firebase/firestore';
-import { firestore } from './firebase-config'; // Import your Firestore configuration
-
 export const addAmountToWishlistItem = async (request, h) => {
     const { wishlistItemId } = request.params;  // Extract wishlistItemId from params
     const { amount, date, type } = request.payload;
