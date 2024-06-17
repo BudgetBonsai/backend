@@ -159,8 +159,6 @@ export const loginEmail = async (request, h) => {
                 return h.response({ error: true, message: 'No such document!' }).code(404);
             } else {
                 const userDoc = docSnap.data();
-                console.log('Document data:', userDoc);
-
                 const name = userDoc.name;
 
                 return h.response({
@@ -551,7 +549,17 @@ export const home = async (request, h) => {
             }
         });
 
-        const greeting = `Good Morning, ${userName}`;
+        const currentHour = new Date().getHours();
+        let greeting = 'Hello';
+
+        if (currentHour < 12) {
+            greeting = `Good Morning, ${userName}`;
+        } else if (currentHour < 18) {
+            greeting = `Good Afternoon, ${userName}`;
+        } else {
+            greeting = `Good Evening, ${userName}`;
+        }
+
         return h.response({
             error: false,
             message: greeting,
