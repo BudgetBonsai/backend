@@ -9,7 +9,8 @@ import {
     getWishlistItems,
     updateWishlistItem, 
     deleteWishlistItem,
-    addAmountToWishlistItem
+    addAmountToWishlistItem,
+    home
 } from './handler.js';
 
 export default [
@@ -93,5 +94,13 @@ export default [
             pre: [verifyToken],
         },
         handler: addAmountToWishlistItem,
+    },
+    {
+        method: 'GET',
+        path: '/home',
+        options: {
+            pre: [verifyToken],
+        },
+        handler: home,
     },
 ];

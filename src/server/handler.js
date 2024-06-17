@@ -518,4 +518,52 @@ export const addAmountToWishlistItem = async (request, h) => {
     }
 };
 
+export const home = async (request, h) => {
+    try {
+        const user = request.user;
+        if (!user) {
+            return h.response({ error: true, message: 'User is not authenticated' }).code(401);
+        }
+
+        const userRef = doc(firestore, 'users', user.uid);
+        const userSnap = await getDoc(userRef);
+
+        if (!userSnap.exists()) {
+            return h.response({ error: true, message: 'User not found' }).code(404);
+        }
+
+        const userData = userSnap.data();
+        const userName = userData.name;
+
+        const transactionRef = collection(firestore, 'users', user.uid, 'transaction');
+        const q = query(transactionRef);
+        const querySnapshot = await getDocs(q);
+
+        let totalExpense = 0;
+        let totalIncome = 0;
+
+        querySnapshot.forEach((doc) => {
+            const transaction = doc.data();
+            if (transaction.type === 'expense') {
+                totalExpense += transaction.amount;
+            } else if (transaction.type === 'income') {
+                totalIncome += transaction.amount;
+            }
+        });
+
+        const greeting = `Good Morning, ${userName}`;
+        return h.response({
+            error: false,
+            message: greeting,
+            data: {
+                totalExpense,
+                totalIncome
+            }
+        }).code(200);
+    } catch (error) {
+        console.error(error);
+        return h.response({ error: true, message: 'Failed to get home data ' + error.message }).code(500);
+    }
+};
+
 export default initFirebase;
