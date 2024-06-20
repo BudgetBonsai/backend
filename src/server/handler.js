@@ -505,6 +505,22 @@ export const addAmountToWishlistItem = async (request, h) => {
         const transactionsRef = collection(wishlistItemRef, 'transactions');
         const transactionDoc = await addDoc(transactionsRef, transactionData);
 
+        // Update the amount field in the wishlist item based on the type
+        const currentAmount = wishlistItemDoc.data().amount || 0;
+        let newAmount;
+        if (type.trim().toLowerCase() === 'income') {
+            newAmount = currentAmount + amountToAdd;
+        } else if (type.trim().toLowerCase() === 'expense') {
+            newAmount = currentAmount - amountToAdd;
+        } else {
+            return h.response({
+                error: true,
+                message: 'Invalid type. Only "income" and "expense" are allowed.'
+            }).code(400);
+        }
+
+        await updateDoc(wishlistItemRef, { amount: newAmount });
+
         return h.response({
             error: false,
             message: 'Amount added to wishlist item successfully',
