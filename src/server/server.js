@@ -1,6 +1,5 @@
 import Hapi from '@hapi/hapi';
 import routes from './routes.js';
-import loadModel from '../services/loadModel.js';
 
 const init = async () => {
     const server = Hapi.server({
@@ -13,10 +12,7 @@ const init = async () => {
             },
         },
     });
-
-    const model = await loadModel();
-    server.app.model = model;
-
+    
     server.route(routes);
 
     try {
